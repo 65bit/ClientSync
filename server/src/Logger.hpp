@@ -6,55 +6,55 @@
 class Logger
 {
 public:
-	enum class Level
-	{
-		Info,
-		Warning,
-		Error
-	};
+    enum class Level
+    {
+        Info,
+        Warning,
+        Error
+    };
 
 private:
-	Logger()
-	{
+    Logger()
+    {
 
-	}
+    }
 
-	Logger(const Logger&) = delete;
-	Logger& operator = (const Logger&) = delete;
-
-public:
-	static Logger& Instance()
-	{
-		static Logger instance;
-		return instance;
-	}
+    Logger(const Logger&) = delete;
+    Logger& operator = (const Logger&) = delete;
 
 public:
-	void log(const std::string& _message, Level _level = Level::Info)
-	{
-		std::string prefix;
+    static Logger& Instance()
+    {
+        static Logger instance;
+        return instance;
+    }
 
-		switch (_level)
-		{
-		case Level::Info:
-			prefix = "[INFO]";
-			break;
+public:
+    void log(const std::string& _message, Level _level = Level::Info)
+    {
+        std::string prefix;
 
-		case Level::Warning:
-			prefix = "[WARNING]";
-			break;
+        switch (_level)
+        {
+        case Level::Info:
+            prefix = "[INFO]";
+            break;
 
-		case Level::Error:
-			prefix = "[ERROR]";
-			break;
+        case Level::Warning:
+            prefix = "[WARNING]";
+            break;
 
-		default:
-			prefix = "[UNDEFINED]";
-			break;
-		}
+        case Level::Error:
+            prefix = "[ERROR]";
+            break;
 
-		std::cout << prefix << _message << std::endl;
-	}
+        default:
+            prefix = "[UNDEFINED]";
+            break;
+        }
+
+        std::cout << prefix << _message << std::endl;
+    }
 };
 
 #define LOG_INFO(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " file:" + __FILE__ + " line:" + std::to_string(__LINE__), Logger::Level::Info); }while(0)
