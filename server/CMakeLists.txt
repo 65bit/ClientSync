@@ -9,11 +9,17 @@ set(ENET_ROOT ${CMAKE_SOURCE_DIR}/lib/enet-1.3.14)
 include_directories(${ENET_ROOT}/include)
 add_subdirectory(${ENET_ROOT})
 
-#Build
-file(GLOB_RECURSE SERVER_INCLUDE src/*.hpp)
-file(GLOB_RECURSE SERVER_SOURCE src/*.cpp)
+#Configure delegates
+set(FAST_DELEGATE_ROOT ${CMAKE_SOURCE_DIR}/lib/FastDelegate)
+include_directories(${FAST_DELEGATE_ROOT})
 
-add_executable(${TARGET_NAME} ${SERVER_INCLUDE} ${SERVER_SOURCE})
+#Build
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
+file(GLOB_RECURSE PROJECT_INCLUDE src/*.hpp)
+file(GLOB_RECURSE PROJECT_SOURCE src/*.cpp)
+
+add_executable(${TARGET_NAME} ${PROJECT_INCLUDE} ${PROJECT_SOURCE})
 
 #Link externals
 target_link_libraries(${TARGET_NAME} enet)
