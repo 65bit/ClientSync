@@ -13,16 +13,16 @@ public:
     {
         int value{ 0 };
 
-		ID(int _value)
-			: value(_value)
-		{
+        ID(int _value)
+            : value(_value)
+        {
 
-		}
+        }
 
-		bool operator == (const ID& _id) const
-		{
-			return value == _id.value;
-		}
+        bool operator == (const ID& _id) const
+        {
+            return value == _id.value;
+        }
     };
 
 public:

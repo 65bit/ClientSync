@@ -31,25 +31,25 @@ public:
             return false;
         }
 
-		LOG_INFO("Network initialized successfully");
+        LOG_INFO("Network initialized successfully");
         enet_time_set(enet_time_get());
 
         return true;
     }
 
-	void deinit()
-	{
-		std::for_each(m_host->peers, m_host->peers + m_host->peerCount, [this](ENetPeer& _peer)
-		{
-			deinitPlayer(&_peer);
-			enet_peer_disconnect_now(&_peer, 0);
-		});
+    void deinit()
+    {
+        std::for_each(m_host->peers, m_host->peers + m_host->peerCount, [this](ENetPeer& _peer)
+        {
+            deinitPlayer(&_peer);
+            enet_peer_disconnect_now(&_peer, 0);
+        });
 
-		enet_host_destroy(m_host);
-		enet_deinitialize();
+        enet_host_destroy(m_host);
+        enet_deinitialize();
 
-		LOG_INFO("Network deinitialized successfully");
-	}
+        LOG_INFO("Network deinitialized successfully");
+    }
 
     bool poll(int _maxIterations)
     {
@@ -105,44 +105,44 @@ public:
         return true;
     }
 
-	void send(Player& _receiver, const WriteStream& _stream, bool _reliable = true)
-	{
-		auto peer = getPeerForPlayer(_receiver);
-		auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), preparePacketFlags(_reliable));
+    void send(Player& _receiver, const WriteStream& _stream, bool _reliable = true)
+    {
+        auto peer = getPeerForPlayer(_receiver);
+        auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), preparePacketFlags(_reliable));
 
-		enet_peer_send(peer, 0, packet);
-	}
+        enet_peer_send(peer, 0, packet);
+    }
 
-	void broadcast(const WriteStream& _stream, bool _reliable = true)
-	{
-		auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), preparePacketFlags(_reliable));
-		enet_host_broadcast(m_host, 0, packet);
-	}
+    void broadcast(const WriteStream& _stream, bool _reliable = true)
+    {
+        auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), preparePacketFlags(_reliable));
+        enet_host_broadcast(m_host, 0, packet);
+    }
 
-	Player* getPlayer(Player::ID _id)
-	{
-		auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [_id, this](const ENetPeer& _peer)
-		{
-			auto player = getPlayerForPeer(_peer);
-			return player->getID() == _id;
-		});
+    Player* getPlayer(Player::ID _id)
+    {
+        auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [_id, this](const ENetPeer& _peer)
+        {
+            auto player = getPlayerForPeer(_peer);
+            return player->getID() == _id;
+        });
 
-		return getPlayerForPeer(*it);
-	}
+        return getPlayerForPeer(*it);
+    }
 
-	std::vector<Player*> getAllPlayers()
-	{
-		std::vector<Player*> result;
-		result.reserve(m_host->peerCount);
+    std::vector<Player*> getAllPlayers()
+    {
+        std::vector<Player*> result;
+        result.reserve(m_host->peerCount);
 
-		for (size_t i = 0; i < m_host->peerCount; ++i)
-		{
-			auto peer = m_host->peers[i];
-			result.push_back(getPlayerForPeer(peer));
-		}
+        for (size_t i = 0; i < m_host->peerCount; ++i)
+        {
+            auto peer = m_host->peers[i];
+            result.push_back(getPlayerForPeer(peer));
+        }
 
-		return result;
-	}
+        return result;
+    }
 
     unsigned getTime() const
     {
@@ -152,82 +152,82 @@ public:
 private:
     void initPlayer(ENetPeer* _peer)
     {
-		static int nextFreeID = 0;
-		auto player = createPlayerForPeer(_peer, ++nextFreeID);		
+        static int nextFreeID = 0;
+        auto player = createPlayerForPeer(_peer, ++nextFreeID);		
 
-		LOG_INFO("Player initialized, ID:" + std::to_string(player->getID().value));
-		onPlayerConnected(*player);
+        LOG_INFO("Player initialized, ID:" + std::to_string(player->getID().value));
+        onPlayerConnected(*player);
     }
 
     void deinitPlayer(ENetPeer* _peer)
     {
-		auto player = getPlayerForPeer(_peer);
+        auto player = getPlayerForPeer(_peer);
 
-		LOG_INFO("Player deinitialized, ID:" + std::to_string(player->getID().value));
-		onPlayerDisconnected(*player);
+        LOG_INFO("Player deinitialized, ID:" + std::to_string(player->getID().value));
+        onPlayerDisconnected(*player);
 
-		destroyPlayerForPeer(_peer);
+        destroyPlayerForPeer(_peer);
     }
 
     void processPacket(ENetPeer* _sender, ENetPacket* _packet)
     {
-		auto player = getPlayerForPeer(_sender);
-		ReadStream stream{ {_packet->data, _packet->data + _packet->dataLength} };
+        auto player = getPlayerForPeer(_sender);
+        ReadStream stream{ {_packet->data, _packet->data + _packet->dataLength} };
 
-		LOG_INFO("Processing packet from player, ID:" + std::to_string(player->getID().value));
-		onPacketReceived(*player, stream);
+        LOG_INFO("Processing packet from player, ID:" + std::to_string(player->getID().value));
+        onPacketReceived(*player, stream);
 
         enet_packet_destroy(_packet);
     }
 
-	// --------- Peer-Player management functionality ---------
+    // --------- Peer-Player management functionality ---------
 
-	Player* createPlayerForPeer(ENetPeer* _peer, Player::ID _id)
-	{
-		auto player = new Player{ _id };
-		_peer->data = player;
-		return player;
-	}
+    Player* createPlayerForPeer(ENetPeer* _peer, Player::ID _id)
+    {
+        auto player = new Player{ _id };
+        _peer->data = player;
+        return player;
+    }
 
-	void destroyPlayerForPeer(ENetPeer* _peer)
-	{
-		auto player = getPlayerForPeer(_peer);
-		_peer->data = nullptr;
-		delete player;
-	}
+    void destroyPlayerForPeer(ENetPeer* _peer)
+    {
+        auto player = getPlayerForPeer(_peer);
+        _peer->data = nullptr;
+        delete player;
+    }
 
-	ENetPeer* getPeerForPlayer(Player& _player)
-	{
-		auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [&_player, this](ENetPeer& _peer)
-		{
-			auto player = getPlayerForPeer(_peer);
-			return player->getID() == _player.getID();
-		});
+    ENetPeer* getPeerForPlayer(Player& _player)
+    {
+        auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [&_player, this](ENetPeer& _peer)
+        {
+            auto player = getPlayerForPeer(_peer);
+            return player->getID() == _player.getID();
+        });
 
-		return &(*it);
-	}
+        return &(*it);
+    }
 
-	Player* getPlayerForPeer(const ENetPeer* _peer)
-	{
-		return static_cast<Player*>(_peer->data);
-	}
+    Player* getPlayerForPeer(const ENetPeer* _peer)
+    {
+        return static_cast<Player*>(_peer->data);
+    }
 
-	Player* getPlayerForPeer(const ENetPeer& _peer)
-	{
-		return getPlayerForPeer(&_peer);
-	}
+    Player* getPlayerForPeer(const ENetPeer& _peer)
+    {
+        return getPlayerForPeer(&_peer);
+    }
 
-	// --------- Other functionality ---------
+    // --------- Other functionality ---------
 
-	ENetPacketFlag preparePacketFlags(bool _reliable)
-	{
-		return _reliable ? ENET_PACKET_FLAG_RELIABLE : ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT;
-	}
+    ENetPacketFlag preparePacketFlags(bool _reliable)
+    {
+        return _reliable ? ENET_PACKET_FLAG_RELIABLE : ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT;
+    }
 
 public:
-	Callback<void(Player&)> onPlayerConnected;
-	Callback<void(Player&)> onPlayerDisconnected;
-	Callback<void(Player&, ReadStream)> onPacketReceived;
+    Callback<void(Player&)> onPlayerConnected;
+    Callback<void(Player&)> onPlayerDisconnected;
+    Callback<void(Player&, ReadStream)> onPacketReceived;
 
 private:
     ENetHost* m_host;
