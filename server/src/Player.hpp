@@ -6,7 +6,6 @@ struct Vec2
     float y{ 0.0f };
 };
 
-
 class Player
 {
 public:
