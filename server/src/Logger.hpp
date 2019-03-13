@@ -30,7 +30,12 @@ public:
     }
 
 public:
-    void log(const std::string& _message, Level _level = Level::Info)
+	void log(const std::string& _message)
+	{
+		std::cout << _message << std::endl;
+	}
+
+    void log(const std::string& _message, Level _level)
     {
         std::string prefix;
 
@@ -53,10 +58,11 @@ public:
             break;
         }
 
-        std::cout << prefix << _message << std::endl;
+        std::cout << prefix << " " << _message << std::endl;
     }
 };
 
-#define LOG_INFO(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " file:" + __FILE__ + " line:" + std::to_string(__LINE__), Logger::Level::Info); }while(0)
-#define LOG_WARNING(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " file:" +  __FILE__ + " line:" +  std::to_string(__LINE__), Logger::Level::Warning); }while(0)
-#define LOG_ERROR(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " file:" +  __FILE__ + " line:" +  std::to_string(__LINE__), Logger::Level::Error); }while(0)
+#define LOG_ENDL() do{ Logger::Instance().log(""); }while(0)
+#define LOG_INFO(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " [[file:" + __FILE__ + " line:" + std::to_string(__LINE__) + "]]", Logger::Level::Info); }while(0)
+#define LOG_WARNING(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " [[file:" +  __FILE__ + " line:" +  std::to_string(__LINE__) + "]]", Logger::Level::Warning); }while(0)
+#define LOG_ERROR(__MESSAGE__) do{ std::string msg(__MESSAGE__); Logger::Instance().log(msg + " [[file:" +  __FILE__ + " line:" +  std::to_string(__LINE__) + "]]", Logger::Level::Error); }while(0)

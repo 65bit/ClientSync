@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Network.hpp"
+#include "Room.hpp"
 
 class Server
 {
@@ -8,67 +9,72 @@ class Server
     static constexpr unsigned BroadcastRate = 100u; // 10hz
 
 public:
+	Server()
+		: m_room(m_network)
+	{
+
+	}
+
     bool init()
     {
-        const bool result = m_network.init();
+		if (!m_network.init())
+		{
+			return false;
+		}
 
-        if (result)
-        {
-            m_network.onPlayerConnected.add(this, &Server::onPlayerConnected);
-            m_network.onPlayerDisconnected.add(this, &Server::onPlayerDisconnected);
-        }
+		if (!m_room.init())
+		{
+			return false;
+		}
 
-        return result;
+		LOG_INFO("Server initialized successfully");
+		return true;
     }
+
+	void deinit()
+	{
+		m_room.deinit();
+		m_network.deinit();
+
+		LOG_INFO("Server deinitialized successfully");
+	}
 
     void run()
     {
+		LOG_ENDL();
+		LOG_INFO("Run server loop");
+		LOG_INFO("Simulation rate:" + std::to_string(SimulationRate) + "ms");
+		LOG_INFO("Broadcast rate:" + std::to_string(BroadcastRate) + "ms");
+
         auto simulateTime = m_network.getTime();
         auto broadcastTime = m_network.getTime();
 
         while (true)
         {
-            if ((m_network.getTime() - simulateTime) >= SimulationRate)
+			auto delta = m_network.getTime() - simulateTime;
+
+            if (delta >= SimulationRate)
             {
                 if (!m_network.poll(5))
                 {
                     break;
                 }
 
-                simulate();
+                m_room.simulate(delta);
                 simulateTime = m_network.getTime();
             }
 
-            if ((m_network.getTime() - broadcastTime) >= BroadcastRate)
+			delta = m_network.getTime() - broadcastTime;
+
+            if (delta >= BroadcastRate)
             {
-                broadcast();
+                m_room.broadcast(delta);
                 broadcastTime = m_network.getTime();
             }
         }
-    }
-
-private:
-    void simulate()
-    {
-
-    }
-
-    void broadcast()
-    {
-
-    }
-
-private:
-    void onPlayerConnected(Player::ID _id)
-    {
-
-    }
-
-    void onPlayerDisconnected(Player::ID _id)
-    {
-
-    }
+    } 
 
 private:
     Network m_network;
+	Room m_room;
 };
