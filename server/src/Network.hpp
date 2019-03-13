@@ -5,7 +5,7 @@
 #include "Logger.hpp"
 #include "Player.hpp"
 #include "Callback.hpp"
-#include "ReadStream.h"
+#include "ReadStream.hpp"
 #include "WriteStream.hpp"
 
 class Network
