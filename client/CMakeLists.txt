@@ -31,9 +31,17 @@ project(${APP_NAME})
 
 set(COCOS2DX_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cocos2d)
 set(CMAKE_MODULE_PATH ${COCOS2DX_ROOT_PATH}/cmake/Modules/)
+set(COMMON_PATH ${CMAKE_SOURCE_DIR}/lib)
+set(ENET_PATH ${COMMON_PATH}/enet-1.3.14)
+set(FAST_DELEGATE_PATH ${COMMON_PATH}/FastDelegate)
 
 include(CocosBuildSet)
 add_subdirectory(${COCOS2DX_ROOT_PATH}/cocos ${ENGINE_BINARY_PATH}/cocos/core)
+add_subdirectory(${ENET_PATH})
+
+include_directories(${COMMON_PATH})
+include_directories(${ENET_PATH}/include)
+include_directories(${FAST_DELEGATE_PATH})
 
 # record sources, headers, resources...
 set(GAME_SOURCE)
@@ -46,15 +54,12 @@ if(APPLE OR WINDOWS)
     cocos_mark_multi_resources(common_res_files RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 
+file(GLOB_RECURSE ETC_GAME_SOURCE Classes/*.cpp Classes/*.c)
+file(GLOB_RECURSE ETC_GAME_HEADER Classes/*.hpp Classes/*.h)
+
 # add cross-platforms source files and header files 
-list(APPEND GAME_SOURCE
-     Classes/AppDelegate.cpp
-     Classes/HelloWorldScene.cpp
-     )
-list(APPEND GAME_HEADER
-     Classes/AppDelegate.h
-     Classes/HelloWorldScene.h
-     )
+list(APPEND GAME_SOURCE ${ETC_GAME_SOURCE})
+list(APPEND GAME_HEADER ${ETC_GAME_HEADER})
 
 if(ANDROID)
     # change APP_NAME to the share library name for Android, it's value depend on AndroidManifest.xml
@@ -121,6 +126,7 @@ else()
     target_link_libraries(${APP_NAME} -Wl,--whole-archive cpp_android_spec -Wl,--no-whole-archive)
 endif()
 
+target_link_libraries(${APP_NAME} enet)
 target_link_libraries(${APP_NAME} cocos2d)
 target_include_directories(${APP_NAME}
         PRIVATE Classes

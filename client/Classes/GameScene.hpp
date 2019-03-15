@@ -1,6 +1,7 @@
 #pragma once
 
-#include "cocos2d.h"
+#include "Core.hpp"
+#include "Connection.hpp"
 
 class GameScene
     : public cocos2d::Scene
@@ -8,5 +9,16 @@ class GameScene
     using Parent = cocos2d::Scene;
 
 public:
-    CREATE_FUNC(GameScene);
+    GameScene(Connection&& _connection);
+    GENERIC_CREATE_FUNC(GameScene);
+
+private:
+    bool init() override;
+    void update(float _delta) override;
+    
+    void onButtonTouch(cocos2d::Ref* _sender, cocos2d::ui::Widget::TouchEventType _type);
+    
+private:
+    cocos2d::ui::Button* m_disconnectButton;
+    Connection m_connection;
 };

@@ -46,6 +46,11 @@ public:
             
         (*this) -= delegate;
     }
+    
+    void clear()
+    {
+        m_delegates.clear();
+    }
         
     template<typename... Args>
     void operator ()(Args&&... _args)
