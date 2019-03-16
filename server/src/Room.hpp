@@ -113,39 +113,6 @@ protected:
         }
         
         m_network.send(_player, stream);
-        
-        //Testread
-        
-        std::string lg = "Sending initResponse\n";
-        
-        auto buf = stream.getBuffer();
-        ReadStream rs(std::move(buf));
-        
-        auto packetType = static_enum_cast(PacketType::Undefined);
-        rs >> packetType;
-        lg += "pt:" + std::to_string(packetType) + "\n";
-        
-        std::int32_t playerID = 0;
-        rs >> playerID;
-        lg += "pid:" + std::to_string(playerID) + "\n";
-        
-        std::int32_t playerCount = 0;
-        rs >> playerCount;
-        lg += "pc:" + std::to_string(playerCount) + "\n" + "FRAMES\n";
-        
-        for(; playerCount != 0; --playerCount)
-        {
-            std::int32_t remotePlayerID = 0;
-            rs >> remotePlayerID;
-            lg += "rpid:" + std::to_string(remotePlayerID) + "\n";
-            
-            ServerFrame frame;
-            rs >> frame.id >> frame.pos.x >> frame.pos.y;
-            lg += "fm:" + std::to_string(frame.id) + " " + std::to_string(frame.pos.x) + " " + std::to_string(frame.pos.y) + "\n";
-            lg += "---\n";
-        }
-        
-        LOG_INFO(lg);
     }
     
     void processFrame(ReadStream& _stream, Player& _player)
@@ -160,6 +127,7 @@ protected:
         {
             ClientFrame frame;
             _stream >> frame.id >> frame.dir.x >> frame.dir.y;
+            
             frames.push_back(frame);
         }
         
