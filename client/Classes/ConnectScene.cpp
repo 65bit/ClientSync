@@ -5,13 +5,13 @@ using namespace cocos2d;
 
 ConnectScene::ConnectScene()
 {
-    subscribe();
+    
 }
 
 ConnectScene::ConnectScene(Connection&& _connection)
 : m_connection(std::move(_connection))
 {
-    subscribe();
+    
 }
 
 ConnectScene::~ConnectScene()
@@ -38,6 +38,7 @@ bool ConnectScene::init()
     
     updateState();
     scheduleUpdate();
+    subscribe();
     
     return true;
 }

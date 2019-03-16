@@ -193,7 +193,11 @@ bool Connection::send(const WriteStream& _stream)
         CCLOG("Trying to send data while state in %s state", ToString(m_state).c_str());
         return false;
     }
-    return false;
+    
+    auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), ENET_PACKET_FLAG_RELIABLE);
+    enet_peer_send(m_peer.get(), 0, packet);
+    
+    return true;
 }
 
 Connection::State Connection::getState() const

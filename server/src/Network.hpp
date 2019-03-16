@@ -124,6 +124,12 @@ public:
         auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [_id, this](const ENetPeer& _peer)
         {
             auto player = getPlayerForPeer(_peer);
+            
+            if(!player)
+            {
+                return false;
+            }
+            
             return player->getID() == _id;
         });
 
@@ -138,7 +144,12 @@ public:
         for (size_t i = 0; i < m_host->peerCount; ++i)
         {
             auto peer = m_host->peers[i];
-            result.push_back(getPlayerForPeer(peer));
+            auto player = getPlayerForPeer(peer);
+            
+            if(player)
+            {
+                result.push_back(player);
+            }
         }
 
         return result;
@@ -163,6 +174,11 @@ private:
     {
         auto player = getPlayerForPeer(_peer);
 
+        if(!player)
+        {
+            return;
+        }
+        
         LOG_INFO("Player deinitialized, ID:" + std::to_string(player->getID().value));
         onPlayerDisconnected(*player);
 
@@ -201,6 +217,12 @@ private:
         auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [&_player, this](ENetPeer& _peer)
         {
             auto player = getPlayerForPeer(_peer);
+            
+            if(!player)
+            {
+                return false;
+            }
+            
             return player->getID() == _player.getID();
         });
 

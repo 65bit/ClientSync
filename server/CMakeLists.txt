@@ -9,6 +9,10 @@ project(${TARGET_NAME})
 set(COMMON_ROOT ${CMAKE_SOURCE_DIR}/lib)
 include_directories(${COMMON_ROOT})
 
+#Configure rapidjson
+set(RAPID_ROOT ${COMMON_ROOT})
+include_directories(${RAPID_ROOT}/rapidjson)
+
 #Configure ENet
 set(ENET_ROOT ${COMMON_ROOT}/enet-1.3.14)
 include_directories(${ENET_ROOT}/include)
