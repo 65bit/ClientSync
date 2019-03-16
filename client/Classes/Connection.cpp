@@ -24,7 +24,7 @@ Connection::Connection()
 : m_host(nullptr, std::bind(DestroyENetHost, std::placeholders::_1))
 , m_peer(nullptr, std::bind(DestroyENetPeer, std::placeholders::_1))
 {
-    
+    m_pendingPackets.reserve(20);
 }
 
 Connection::Connection(Connection&& _movable)
@@ -39,6 +39,8 @@ Connection::Connection(Connection&& _movable)
     _movable.onStateChanged.clear();
     _movable.onPacketReceived.clear();
     _movable.m_state = State::Undefined;
+    
+    releasePendingPackets();
 }
 
 Connection::~Connection()
@@ -53,12 +55,13 @@ void Connection::poll()
         return;
     }
     
+    sendPendingPackets();
+    
+    ENetEvent event;
     int iterationsCount = 5;
     
     std::vector<ENetEvent> collectedEvents;
     collectedEvents.reserve(iterationsCount);
-    
-    ENetEvent event;
     
     while(iterationsCount != 0)
     {
@@ -102,7 +105,6 @@ void Connection::poll()
                 
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                CCLOG("Receive ENET_EVENT_TYPE_RECEIVE event");
                 ReadStream stream{{event.packet->data, event.packet->data + event.packet->dataLength}};
                 
                 onPacketReceived(stream);
@@ -194,8 +196,12 @@ bool Connection::send(const WriteStream& _stream)
         return false;
     }
     
+    //We need to delay packets sending logic to next frame, because enet has a bug
+    //If you'll try to send packet right after receive some enet event (for example connect),
+    //you'll face with situation when enet will start send you receive event each time when you'll call service method for host
+    
     auto packet = enet_packet_create(_stream.getBuffer().data(), _stream.getBuffer().size(), ENET_PACKET_FLAG_RELIABLE);
-    enet_peer_send(m_peer.get(), 0, packet);
+    m_pendingPackets.push_back(packet);
     
     return true;
 }
@@ -219,6 +225,33 @@ void Connection::setState(State _newState, bool _invokeCallbacks)
     {
         onStateChanged(m_state);
     }
+}
+
+void Connection::sendPendingPackets()
+{
+    if(m_state == State::Connected)
+    {
+        for(auto packet : m_pendingPackets)
+        {
+            enet_peer_send(m_peer.get(), 0, packet);
+        }
+    }
+    else
+    {
+        releasePendingPackets();
+    }
+    
+    m_pendingPackets.clear();
+}
+
+void Connection::releasePendingPackets()
+{
+    for(auto packet : m_pendingPackets)
+    {
+        enet_packet_destroy(packet);
+    }
+    
+    m_pendingPackets.clear();
 }
 
 void Connection::terminate(bool _invokeCallbacks)

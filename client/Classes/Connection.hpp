@@ -46,6 +46,8 @@ public:
 private:
     void setState(State _newState, bool _invokeCallbacks = true);
     void terminate(bool _invokeCallbacks);
+    void sendPendingPackets();
+    void releasePendingPackets();
     
 public:
     Callback<void(State)> onStateChanged;
@@ -56,4 +58,6 @@ private:
     
     std::unique_ptr<ENetHost, std::function<void(ENetHost*)>> m_host;
     std::unique_ptr<ENetPeer, std::function<void(ENetPeer*)>> m_peer;
+    
+    std::vector<ENetPacket*> m_pendingPackets;
 };

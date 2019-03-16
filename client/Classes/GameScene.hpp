@@ -2,6 +2,7 @@
 
 #include "Core.hpp"
 #include "Connection.hpp"
+#include "ReadStream.hpp"
 
 struct LocalFrame
 {
@@ -71,10 +72,14 @@ class Opponent
     using Frames = std::vector<ServerFrame>;
     
 public:
-    Opponent(int _id);
+    Opponent(std::int32_t _id);
+    Opponent(std::int32_t _id, const ServerFrame& _frame);
+    
     GENERIC_CREATE_FUNC(Opponent)
     
     int getID() const;
+    
+    void initFromFrame(const ServerFrame& _frame);
     void pushFrames(Frames&& _frames);
     
 private:
@@ -82,7 +87,7 @@ private:
     void update(float _delta) override;
     
 private:
-    const int m_id;
+    const std::int32_t m_id;
     Frames m_unprocessedFrames;
 };
 
@@ -102,24 +107,33 @@ private:
     void update(float _delta) override;
     
     void returnToConnectScene();
-    void checkOpponents(const std::vector<int>& _id);
-    void pushOpponentFrames(int _id, std::vector<ServerFrame>&& _frames);
+    void checkOpponents(const std::vector<std::int32_t>& _id);
+    void pushOpponentFrames(std::int32_t _id, std::vector<ServerFrame>&& _frames);
     void createLocalPlayer();
     void subscribe();
     void unsubscribe();
+    
+    Opponent* addOpponent(std::int32_t _id);
+    
+    void processInit(ReadStream& _stream);
+    void processFrame(ReadStream& _stream);
     
     void onButtonTouch(cocos2d::Ref* _sender, cocos2d::ui::Widget::TouchEventType _type);
     void onConnectionStateChanged(Connection::State _newState);
     void onPacketReceived(ReadStream _stream);
     
 private:
-    LocalPlayer* m_localPlayer;
+    LocalPlayer* m_localPlayer{nullptr};
     
     std::vector<Opponent*> m_opponents;
     
-    cocos2d::ui::Button* m_disconnectButton;
+    cocos2d::ui::Button* m_disconnectButton{nullptr};
 
     Connection m_connection;
     
-    float m_networkTicks;
+    float m_networkTicks{0.0f};
+    
+    bool m_initialized{false};
+    
+    std::int32_t m_localID{0};
 };

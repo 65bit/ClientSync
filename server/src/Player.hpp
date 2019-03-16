@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 
 struct Vec2
 {
@@ -24,13 +25,13 @@ struct Vec2
 
 struct ClientFrame
 {
-    int id{0};
+    std::int32_t id{0};
     Vec2 dir;
 };
 
 struct ServerFrame
 {
-    int id{0};
+    std::int32_t id{0};
     Vec2 pos;
 };
 
@@ -60,7 +61,7 @@ public:
     Player(const ID& _id)
         : m_id(_id)
     {
-        m_unprocessedFrames.reserve(128);
+        m_unprocessedFrames.reserve(256);
     }
 
     ID getID() const
@@ -98,7 +99,13 @@ public:
         serverFrame.id = frame.id;
         serverFrame.pos = m_pos;
         
+        m_lastProcessedFrame = serverFrame;
         m_processedFrames.push_back(serverFrame);
+    }
+    
+    ServerFrame getLastProcessedFrame() const
+    {
+        return m_lastProcessedFrame;
     }
     
     void clearProcessedFrames()
@@ -111,6 +118,7 @@ private:
     
     ClientFrames m_unprocessedFrames;
     ServerFrames m_processedFrames;
+    ServerFrame m_lastProcessedFrame;
     
     Vec2 m_pos;
 };

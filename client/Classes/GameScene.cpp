@@ -1,13 +1,11 @@
 #include "GameScene.hpp"
 #include "ConnectScene.hpp"
+#include "CommonTypes.hpp"
 
 using namespace cocos2d;
 
 GameScene::GameScene(Connection&& _connection)
 : m_connection(std::move(_connection))
-, m_localPlayer(nullptr)
-, m_disconnectButton(nullptr)
-, m_networkTicks(0.0f)
 {
     
 }
@@ -39,6 +37,10 @@ bool GameScene::init()
     scheduleUpdate();
     subscribe();
     
+    WriteStream stream(10);
+    stream << static_enum_cast(PacketType::InitRequest);
+    
+    m_connection.send(stream);
     return true;
 }
 
@@ -62,7 +64,7 @@ void GameScene::update(float _delta)
         }
         
         WriteStream stream(frames.size() * sizeof(LocalFrame)); // Appox. capacity
-        stream << static_cast<std::int32_t>(frames.size());
+        stream << static_enum_cast(PacketType::Frame) << static_cast<std::int32_t>(frames.size());
         
         for(const auto& frame : frames)
         {
@@ -105,68 +107,103 @@ void GameScene::onConnectionStateChanged(Connection::State _newState)
 
 void GameScene::onPacketReceived(ReadStream _stream)
 {
-    std::int32_t opponentsCount = 0;
-    _stream >> opponentsCount;
+    auto packetType = static_enum_cast(PacketType::Undefined);
+    _stream >> packetType;
     
-    std::vector<int> opponents;
-    opponents.reserve(opponentsCount);
-    
-    while(opponentsCount != 0)
+    switch(static_cast<PacketType>(packetType))
     {
-        std::int32_t opponentID = 0;
-        
-        _stream >> opponentID;
-        opponents.push_back(opponentID);
-        
-        --opponentsCount;
+        case PacketType::InitResponse:
+            processInit(_stream);
+            break;
+            
+        case PacketType::Frame:
+            processFrame(_stream);
+            break;
+            
+        default:
+            CCLOG("Receive packet with unknown type");
+            break;
     }
+}
+
+void GameScene::processInit(ReadStream& _stream)
+{
+    CCASSERT(m_localID == 0, "Client already initialized");
+    CCLOG("Initializing client");
     
-    checkOpponents(opponents);
-    
-    std::int32_t hasLocalFrame = 0;
-    _stream >> hasLocalFrame;
-    
-    if(hasLocalFrame != 0)
+    _stream >> m_localID;
+
+    std::int32_t playersCount = 0;
+    _stream >> playersCount;
+
+    for(;playersCount != 0; --playersCount)
     {
+        std::int32_t playerID = 0;
+        _stream >> playerID;
+
         ServerFrame frame;
         _stream >> frame.id >> frame.pos.x >> frame.pos.y;
-        m_localPlayer->reconcile(frame);
-    }
-    
-    std::int32_t remotePlayersCount = 0;
-    _stream >> remotePlayersCount;
-    
-    if(remotePlayersCount != 0)
-    {
-        while(remotePlayersCount != 0)
+        
+        if(playerID != m_localID)
         {
-            int32_t id = 0;
-            int32_t framesCount = 0;
-            
-            _stream >> id >> framesCount;
-            
-            std::vector<ServerFrame> remoteFrames;
-            remoteFrames.reserve(framesCount);
-            
-            while(framesCount != 0)
-            {
-                ServerFrame frame;
-                _stream >> frame.id >> frame.pos.x >> frame.pos.y;
-                remoteFrames.push_back(frame);
-                
-                --framesCount;
-            }
-            
-            pushOpponentFrames(id, std::move(remoteFrames));
-            --remotePlayersCount;
+            auto opponent = addOpponent(playerID);
+            opponent->initFromFrame(frame);
         }
     }
 }
 
-void GameScene::checkOpponents(const std::vector<int>& _id)
+void GameScene::processFrame(ReadStream& _stream)
+{
+    if(m_localID == 0)
+    {
+        return;
+    }
+    
+    std::int32_t playersCount = 0;
+    _stream >> playersCount;
+    
+    std::vector<std::int32_t> opponentsID;
+    opponentsID.reserve(playersCount);
+    
+    for(;playersCount != 0; --playersCount)
+    {
+        std::int32_t playerID = 0;
+        _stream >> playerID;
+        
+        std::int32_t framesCount = 0;
+        _stream >> framesCount;
+        
+        std::vector<ServerFrame> serverFrames;
+        serverFrames.reserve(framesCount);
+        
+        for(;framesCount != 0; --framesCount)
+        {
+            ServerFrame frame;
+            _stream >> frame.id >> frame.pos.x >> frame.pos.y;
+            
+            serverFrames.push_back(frame);
+        }
+        
+        if(playerID == m_localID)
+        {
+            if(!serverFrames.empty())
+            {
+                m_localPlayer->reconcile(serverFrames.back());
+            }
+        }
+        else
+        {
+            pushOpponentFrames(playerID, std::move(serverFrames));
+            opponentsID.push_back(playerID);
+        }
+    }
+    
+    checkOpponents(opponentsID);
+}
+
+void GameScene::checkOpponents(const std::vector<std::int32_t>& _id)
 {
     //Check disconnected
-    {
     auto it = std::remove_if(m_opponents.begin(), m_opponents.end(), [&_id](Opponent* _opponent)
                              {
                                  auto it = std::find(_id.begin(), _id.end(), _opponent->getID());
@@ -183,35 +220,41 @@ void GameScene::checkOpponents(const std::vector<int>& _id)
     {
         m_opponents.erase(it, m_opponents.end());
     }
-    }
-    
-    // Check connected
-    
-    for(int id : _id)
-    {
-        auto it = std::find_if(m_opponents.begin(), m_opponents.end(), [id](Opponent* _opponent)
-                               {
-                                   return _opponent->getID() == id;
-                               });
-        
-        if(it == m_opponents.end())
-        {
-            auto opponent = Opponent::create(id);
-            addChild(opponent);
-            m_opponents.push_back(opponent);
-        }
-    }
-    
 }
 
-void GameScene::pushOpponentFrames(int _id, std::vector<ServerFrame>&& _frames)
+Opponent* GameScene::addOpponent(std::int32_t _id)
+{
+    Opponent* opponent = Opponent::create(_id);
+    addChild(opponent);
+    
+    m_opponents.push_back(opponent);
+    return opponent;
+}
+
+void GameScene::pushOpponentFrames(std::int32_t _id, std::vector<ServerFrame>&& _frames)
 {
     auto it = std::find_if(m_opponents.begin(), m_opponents.end(), [_id](Opponent* _opponent)
                            {
                                return _opponent->getID() == _id;
                            });
     
-    Opponent* opponent = *it;
+    Opponent* opponent = nullptr;
+    
+    if(it == m_opponents.end())
+    {
+        // New player connected
+        opponent = addOpponent(_id);
+        
+        if(!_frames.empty())
+        {
+            opponent->initFromFrame(_frames.front());
+        }
+    }
+    else
+    {
+        opponent = *it;
+    }
+
     opponent->pushFrames(std::move(_frames));
 }
 
@@ -363,7 +406,7 @@ bool LocalPlayer::isKeyPressed(cocos2d::EventKeyboard::KeyCode _code) const
 
 // RemotePlayer .........
 
-Opponent::Opponent(int _id)
+Opponent::Opponent(std::int32_t _id)
 : m_id(_id)
 {
    
@@ -372,6 +415,11 @@ Opponent::Opponent(int _id)
 int Opponent::getID() const
 {
     return m_id;
+}
+
+void Opponent::initFromFrame(const ServerFrame& _frame)
+{
+    setPosition(_frame.pos);
 }
 
 void Opponent::pushFrames(Frames&& _frames)
