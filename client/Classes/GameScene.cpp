@@ -34,6 +34,7 @@ bool GameScene::init()
     addChild(m_disconnectButton);
     
     createLocalPlayer();
+    createGun();
     scheduleUpdate();
     subscribe();
     
@@ -256,6 +257,13 @@ void GameScene::pushOpponentFrames(std::int32_t _id, std::vector<ServerFrame>&& 
     }
 
     opponent->pushFrames(std::move(_frames));
+}
+
+void GameScene::createGun()
+{
+    m_gun = Gun::create();
+    m_gun->setPosition(VIEW->getDesignResolutionSize() * 0.5f);
+    addChild(m_gun);
 }
 
 void GameScene::createLocalPlayer()

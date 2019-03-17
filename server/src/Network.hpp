@@ -7,6 +7,7 @@
 #include "Callback.hpp"
 #include "ReadStream.hpp"
 #include "WriteStream.hpp"
+#include "config/NetworkConfig.hpp"
 
 class Network
 {
@@ -18,12 +19,18 @@ public:
             LOG_ERROR("Unnable to initialize ENet library");
             return false;
         }
+        
+        if(!m_config.read("data/network_config.json"))
+        {
+            LOG_ERROR("Unnable to read network config");
+            return false;
+        }
 
         ENetAddress address;
         address.host = ENET_HOST_ANY;
-        address.port = 55555;
+        address.port = m_config.getPort();
 
-        m_host = enet_host_create(&address, 32, 2, 0, 0);
+        m_host = enet_host_create(&address, m_config.getMaxPeersCount(), 2, 0, 0);
 
         if (!m_host)
         {
@@ -253,4 +260,6 @@ public:
 
 private:
     ENetHost* m_host;
+    NetworkConfig m_config;
+    
 };

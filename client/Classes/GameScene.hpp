@@ -3,6 +3,7 @@
 #include "Core.hpp"
 #include "Connection.hpp"
 #include "ReadStream.hpp"
+#include "Gun.hpp"
 
 struct LocalFrame
 {
@@ -110,6 +111,7 @@ private:
     void checkOpponents(const std::vector<std::int32_t>& _id);
     void pushOpponentFrames(std::int32_t _id, std::vector<ServerFrame>&& _frames);
     void createLocalPlayer();
+    void createGun();
     void subscribe();
     void unsubscribe();
     
@@ -123,6 +125,8 @@ private:
     void onPacketReceived(ReadStream _stream);
     
 private:
+    Gun* m_gun{nullptr};
+    
     LocalPlayer* m_localPlayer{nullptr};
     
     std::vector<Opponent*> m_opponents;

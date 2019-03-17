@@ -2,12 +2,10 @@
 
 #include "Network.hpp"
 #include "Room.hpp"
+#include "config/ServerConfig.hpp"
 
 class Server
 {
-    static constexpr unsigned SimulationRate = 16u; // 60hz
-    static constexpr unsigned BroadcastRate = 100u; // 10hz
-
 public:
     Server()
         : m_room(m_network)
@@ -24,6 +22,12 @@ public:
 
         if (!m_room.init())
         {
+            return false;
+        }
+        
+        if(!m_config.read("data/server_config.json"))
+        {
+            LOG_WARNING("Unnable to reade server config");
             return false;
         }
 
@@ -43,8 +47,8 @@ public:
     {
         LOG_ENDL();
         LOG_INFO("Run server loop");
-        LOG_INFO("Simulation rate:" + std::to_string(SimulationRate) + "ms");
-        LOG_INFO("Broadcast rate:" + std::to_string(BroadcastRate) + "ms");
+        LOG_INFO("Simulation rate:" + std::to_string(m_config.getSimulationRate()) + "ms");
+        LOG_INFO("Broadcast rate:" + std::to_string(m_config.getBroadcastRate()) + "ms");
 
         auto simulateTime = m_network.getTime();
         auto broadcastTime = m_network.getTime();
@@ -53,7 +57,7 @@ public:
         {
             auto delta = m_network.getTime() - simulateTime;
 
-            if (delta >= SimulationRate)
+            if (delta >= m_config.getSimulationRate())
             {
                 if (!m_network.poll(5))
                 {
@@ -66,7 +70,7 @@ public:
 
             delta = m_network.getTime() - broadcastTime;
 
-            if (delta >= BroadcastRate)
+            if (delta >= m_config.getBroadcastRate())
             {
                 m_room.broadcast(delta);
                 broadcastTime = m_network.getTime();
@@ -75,6 +79,7 @@ public:
     } 
 
 private:
+    ServerConfig m_config;
     Network m_network;
     Room m_room;
 };
