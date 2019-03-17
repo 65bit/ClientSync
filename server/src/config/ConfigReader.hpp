@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <string>
 #include <document.h>
 #include <Logger.hpp>
@@ -11,11 +12,15 @@ public:
     
     bool read(const std::string _path)
     {
-        std::string content;
+        std::ifstream file(_path);
         
-        //#TODO: Read content
+        if(!file.is_open())
+        {
+            LOG_WARNING("Unnable to open config file:" + _path);
+            return false;
+        }
         
-        //Processing
+        const std::string content(std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{});
         
         rapidjson::Document doc;
         doc.Parse(content.c_str());

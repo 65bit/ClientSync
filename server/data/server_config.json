@@ -1,4 +1,4 @@
 {
-	"simulation_rate:16,
+	"simulation_rate":16,
 	"broadcast_rate":100
 }

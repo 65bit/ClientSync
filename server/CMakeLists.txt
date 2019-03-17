@@ -36,3 +36,14 @@ target_link_libraries(${TARGET_NAME} enet)
 if(MSVC)
     target_link_libraries(${TARGET_NAME} wsock32 ws2_32 Winmm)
 endif(MSVC)
+
+#Createa IDE filters
+
+file(GLOB SERVER_FILTER src/*.hpp src/*.cpp)
+source_group("" FILES ${SERVER_FILTER})
+
+file(GLOB_RECURSE CONFIG_FILTER src/config/*.hpp src/config/*.cpp)
+source_group("config" FILES ${CONFIG_FILTER})
+
+file(GLOB_RECURSE SIMULATOR_FILTER src/simulator/*.hpp src/simulator/*.cpp)
+source_group("simulator" FILES ${SIMULATOR_FILTER})

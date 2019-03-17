@@ -10,17 +10,24 @@ class ServerConfig
 public:
     unsigned getSimulationRate() const
     {
-        return 16u;
+        return m_simulationRate;
     }
     
     unsigned getBroadcastRate() const
     {
-        return 100u;
+        return m_broadcastRate;
     }
     
 private:
     bool process(rapidjson::Document& _doc) override
     {
+        m_simulationRate = _doc["simulation_rate"].GetUint();
+        m_broadcastRate = _doc["broadcast_rate"].GetUint();
+        
         return true;
     }
+    
+private:
+    unsigned m_simulationRate{0u};
+    unsigned m_broadcastRate{0u};
 };

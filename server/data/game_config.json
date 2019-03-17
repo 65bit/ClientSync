@@ -1,7 +1,7 @@
 {
 	"gun":
 	{
-		"rotation_speed":40,
+		"rotation_speed":40.0,
 		"shoot_delay_min":2,
 		"shoot_delay_max":5,
 		"damage":20
@@ -10,6 +10,14 @@
 	"player":
 	{
 		"max_health":100,
-		"move_speed":800
+		"move_speed":800.0,
+		"platform_width":200.0,
+		"platform_height":70.0
+	},
+
+	"field":
+	{
+		"field_width":400.0,
+		"field_height":400.0
 	}
 }
