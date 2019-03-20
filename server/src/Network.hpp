@@ -7,6 +7,7 @@
 #include "Callback.hpp"
 #include "ReadStream.hpp"
 #include "WriteStream.hpp"
+#include "CommonTypes.hpp"
 #include "config/NetworkConfig.hpp"
 
 class Network
@@ -112,6 +113,11 @@ public:
         return true;
     }
 
+	unsigned getTime() const
+	{
+		return enet_time_get();
+	}
+
     void send(Player& _receiver, const WriteStream& _stream, bool _reliable = true)
     {
         auto peer = getPeerForPlayer(_receiver);
@@ -126,7 +132,7 @@ public:
         enet_host_broadcast(m_host, 0, packet);
     }
 
-    Player* getPlayer(Player::ID _id)
+    Player* getPlayer(common::ID _id) const
     {
         auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [_id, this](const ENetPeer& _peer)
         {
@@ -143,7 +149,7 @@ public:
         return getPlayerForPeer(*it);
     }
 
-    std::vector<Player*> getAllPlayers()
+    std::vector<Player*> getAllPlayers() const
     {
         std::vector<Player*> result;
         result.reserve(m_host->peerCount);
@@ -162,18 +168,13 @@ public:
         return result;
     }
 
-    unsigned getTime() const
-    {
-        return enet_time_get();
-    }
-
 private:
     void initPlayer(ENetPeer* _peer)
     {
         static int nextFreeID = 0;
         auto player = createPlayerForPeer(_peer, ++nextFreeID);		
 
-        LOG_INFO("Player initialized, ID:" + std::to_string(player->getID().value));
+        LOG_INFO("Player initialized, ID:" + std::to_string(player->getID()));
         onPlayerConnected(*player);
     }
 
@@ -186,7 +187,7 @@ private:
             return;
         }
         
-        LOG_INFO("Player deinitialized, ID:" + std::to_string(player->getID().value));
+        LOG_INFO("Player deinitialized, ID:" + std::to_string(player->getID()));
         onPlayerDisconnected(*player);
 
         destroyPlayerForPeer(_peer);
@@ -197,7 +198,7 @@ private:
         auto player = getPlayerForPeer(_sender);
         ReadStream stream{ {_packet->data, _packet->data + _packet->dataLength} };
 
-        LOG_INFO("Processing packet from player, ID:" + std::to_string(player->getID().value));
+        LOG_INFO("Processing packet from player, ID:" + std::to_string(player->getID()));
         onPacketReceived(*player, stream);
 
         enet_packet_destroy(_packet);
@@ -205,7 +206,7 @@ private:
 
     // --------- Peer-Player management functionality ---------
 
-    Player* createPlayerForPeer(ENetPeer* _peer, Player::ID _id)
+    Player* createPlayerForPeer(ENetPeer* _peer, common::ID _id)
     {
         auto player = new Player{ _id };
         _peer->data = player;
@@ -219,7 +220,7 @@ private:
         delete player;
     }
 
-    ENetPeer* getPeerForPlayer(Player& _player)
+    ENetPeer* getPeerForPlayer(Player& _player) const
     {
         auto it = std::find_if(m_host->peers, m_host->peers + m_host->peerCount, [&_player, this](ENetPeer& _peer)
         {
@@ -236,12 +237,12 @@ private:
         return &(*it);
     }
 
-    Player* getPlayerForPeer(const ENetPeer* _peer)
+    Player* getPlayerForPeer(const ENetPeer* _peer) const
     {
         return static_cast<Player*>(_peer->data);
     }
 
-    Player* getPlayerForPeer(const ENetPeer& _peer)
+    Player* getPlayerForPeer(const ENetPeer& _peer) const
     {
         return getPlayerForPeer(&_peer);
     }

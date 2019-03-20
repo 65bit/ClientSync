@@ -7,6 +7,12 @@
 class WriteStream
 {
 public:
+	WriteStream(WriteStream&& _rvalue)
+		: m_buffer{ std::move(_rvalue.m_buffer) }
+	{
+
+	}
+
     WriteStream(int _capacity)
     {
         m_buffer.reserve(_capacity);
@@ -23,6 +29,11 @@ public:
         m_buffer.insert(m_buffer.end(), begin, end);
         return *this;
     }
+
+	void append(const WriteStream& _stream)
+	{
+		m_buffer.insert(m_buffer.end(), _stream.m_buffer.begin(), _stream.m_buffer.end());
+	}
 
     const std::vector<char>& getBuffer() const
     {

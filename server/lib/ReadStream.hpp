@@ -8,6 +8,13 @@ class ReadStream
     using Buffer = std::vector<char>;
 
 public:
+	ReadStream(ReadStream&& _rvalue)
+		: m_offset{ _rvalue.m_offset }
+		, m_buffer{ std::move(_rvalue.m_buffer) }
+	{
+		_rvalue.m_offset = 0;
+	}
+
     ReadStream(Buffer&& _buffer)
         : m_buffer(std::move(_buffer))
     {

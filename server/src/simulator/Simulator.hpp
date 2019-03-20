@@ -4,13 +4,13 @@
 #include <vector>
 
 #include "simulator/Types.hpp"
-#include "simulator/Player.hpp"
+//#include "simulator/Player.hpp"
 
 namespace simulator
 {
     class Simulator
     {
-        using PlayerPtr = std::shared_ptr<Player>;
+        //using PlayerPtr = std::shared_ptr<Player>;
         
     public:
         Simulator(const Config& _config, const LoggerProxy& _logger)
@@ -22,8 +22,11 @@ namespace simulator
         
         void simulate(unsigned _delta)
         {
-            for(auto [slot, player] : m_players)
+            for(const auto& pair : m_players)
             {
+				auto& slot = pair.first;
+				auto& player = pair.second;
+
                 simulatePlayer(player, _delta);
             }
         }
@@ -46,8 +49,11 @@ namespace simulator
             static ID nextFrameID = InvalidID;
             Frame frame{++nextFrameID};
 
-            for(auto [slot, player] : m_players)
+            for(const auto& pair : m_players)
             {
+				auto& slot = pair.first;
+				auto& player = pair.second;
+
                 frame.outputs[slot] = player->popOutput();
             }
 
@@ -55,7 +61,7 @@ namespace simulator
             return frame;
         }
         
-        PlayerPtr addPlayer()
+        /*PlayerPtr addPlayer()
         {
             static ID nextPlayerID = InvalidID;
 
@@ -86,10 +92,10 @@ namespace simulator
             }
             
             return player;
-        }
+        }*/
         
     private:
-        void simulatePlayer(PlayerPtr _player, unsigned _delta) const
+		/*void simulatePlayer(PlayerPtr _player, unsigned _delta) const
         {
             if(!_player->hasUnprocessedInput())
             {
@@ -111,9 +117,9 @@ namespace simulator
             }
             
             _player->pushOutput(output);
-        }
+        }*/
         
-        bool directionValidForSlot(Direction _direction, Slot _slot) const
+        /*bool directionValidForSlot(Direction _direction, Slot _slot) const
         {
             switch(_slot)
             {
@@ -132,7 +138,7 @@ namespace simulator
             }
             
             return false;
-        }
+        }*/
         
         Vec2 getInitialPosition(Slot _slot) const
         {
@@ -167,7 +173,7 @@ namespace simulator
             return result;
         }
         
-        Vec2 getVectorFromDirection(Direction _direction) const
+        /*Vec2 getVectorFromDirection(Direction _direction) const
         {
             switch(_direction)
             {
@@ -181,13 +187,13 @@ namespace simulator
             }
             
             return Vec2{0.0f, 0.0f};
-        }
+        }*/
         
     private:
         const Config m_config;
         const LoggerProxy m_logger;
         
-        std::map<Slot, PlayerPtr> m_players;
+        //std::map<Slot, PlayerPtr> m_players;
         std::set<Frame> m_frames;
     };
 }

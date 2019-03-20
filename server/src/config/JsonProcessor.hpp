@@ -5,10 +5,10 @@
 #include <document.h>
 #include <Logger.hpp>
 
-class ConfigReader
+class JsonProcessor
 {
 public:
-    virtual ~ConfigReader() = default;
+    virtual ~JsonProcessor() = default;
     
     bool read(const std::string _path)
     {
@@ -31,9 +31,9 @@ public:
             return false;
         }
         
-        return process(doc);
+        return processJson(doc);
     }
     
 protected:
-    virtual bool process(rapidjson::Document& _doc) = 0;
+    virtual bool processJson(rapidjson::Document& _doc) = 0;
 };

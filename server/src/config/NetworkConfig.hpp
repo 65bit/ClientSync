@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ConfigReader.hpp"
+#include "JsonProcessor.hpp"
 
 class NetworkConfig
-: public ConfigReader
+: public JsonProcessor
 {
-    using Parent = ConfigReader;
+    using Parent = JsonProcessor;
     
 public:
     int getPort() const
@@ -19,7 +19,7 @@ public:
     }
     
 private:
-    bool process(rapidjson::Document& _doc) override
+    bool processJson(rapidjson::Document& _doc) override
     {
         m_port = _doc["port"].GetInt();
         m_maxPeers = _doc["max_peers"].GetInt();

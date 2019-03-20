@@ -1,11 +1,13 @@
 #pragma once
 
+#include "simulator/Types.hpp"
+
 namespace simulator
 {
-    class Player
+    class Platform
     { 
     public:
-        Player(ID _id, Slot _slot)
+		Platform(ID _id, Slot _slot)
         : m_id(_id)
         , m_slot(_slot)
         {
@@ -17,6 +19,11 @@ namespace simulator
             return !m_input.empty();
         }
         
+		void pushInput(std::set<PlayerInput>&& _frames)
+		{
+			m_input.insert(_frames.begin(), _frames.end());
+		}
+
         PlayerInput popPlayerInput()
         {
             if(!hasUnprocessedInput())
@@ -28,11 +35,6 @@ namespace simulator
             m_input.erase(m_input.begin());
             
             return input;
-        }
-        
-        void pushInput(std::set<PlayerInput>&& _frames)
-        {
-            m_input.insert(_frames.begin(), _frames.end());
         }
         
         void pushOutput(const PlayerOutput& _output)

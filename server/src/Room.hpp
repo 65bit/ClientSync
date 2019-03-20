@@ -1,11 +1,34 @@
 #pragma once
 
+#include <fstream>
+
+#include "JsonProcessor.hpp"
+#include "Level.hpp"
 #include "CommonTypes.hpp"
-#include "simulator/Simulator.hpp"
-#include "config/GameConfig.hpp"
+#include "config/RoomConfig.hpp"
 
 class Room
 {
+	class LevelReader
+		: public JsonProcessor
+	{
+		using Parent = JsonProcessor;
+
+	public:
+		Level::StaticGeometry getStaticGeometry() const
+		{
+			return m_staticGeometry;
+		}
+
+	private:
+		bool processJson(rapidjson::Document& _doc) override
+		{
+			//#TODO:
+		}
+
+	private:
+		Level::StaticGeometry m_staticGeometry;
+	};
 public:
     Room(Network& _network)
         : m_network(_network)
@@ -15,46 +38,42 @@ public:
 
     bool init()
     {
-        if(!m_config.read("data/game_config.json"))
+        if(!m_config.read("data/room_config.json"))
         {
             return false;
         }
-        
-        simulator::LoggerProxy proxy;
-        proxy.info = [](const std::string& _msg) { LOG_INFO(_msg); };
-        proxy.warning = [](const std::string& _msg) { LOG_WARNING(_msg); };
-        proxy.error = [](const std::string& _msg) { LOG_ERROR(_msg); };
-        
-        m_simulator.reset(new simulator::Simulator(m_config.getConfig(), proxy));
-        
-        m_network.onPlayerConnected.add(this, &Room::onPlayerConnected);
-        m_network.onPlayerDisconnected.add(this, &Room::onPlayerDisconnected);
-        m_network.onPacketReceived.add(this, &Room::onPacketReceived);
+     
+		if (!initLevel())
+		{
+			return;
+		}
 
-        LOG_INFO("Room initialized successfully");
-        return true;
+		m_lastSimulateTimeStamp = m_network.getTime();
+		m_lastBroadcastTimeStamp = m_network.getTime();
+
+		LOG_INFO("Room initialized successfully");
+		return true;
     }
 
     void deinit()
     {
-        m_network.onPlayerConnected.remove(this, &Room::onPlayerConnected);
+        /*m_network.onPlayerConnected.remove(this, &Room::onPlayerConnected);
         m_network.onPlayerDisconnected.remove(this, &Room::onPlayerDisconnected);
         m_network.onPacketReceived.remove(this, &Room::onPacketReceived);
 
-        LOG_INFO("Room deinitialized");
+        LOG_INFO("Room deinitialized");*/
     }
 
     void simulate(unsigned _delta)
     {
-        /*for(auto player : m_network.getAllPlayers())
+		/*const float delta = 1.0f / static_cast<float>(_delta);
+
+        for(auto player : m_network.getAllPlayers())
         {
-            player->simulate(_delta);
+			simulatePlayer(player, delta);
         }*/
-        
-        if(m_simulator)
-        {
-            m_simulator->simulate(_delta);
-        }
+
+		m_lastSimulateTimeStamp = m_network.getTime();
     }
 
     void broadcast(unsigned _delta)
@@ -79,10 +98,45 @@ public:
         }
         
         m_network.broadcast(stream);*/
-        
-        const auto frame = m_simulator->buildFrame();
-        m_network.broadcast(simulator::Frame::serialize(frame));
+
+		m_lastBroadcastTimeStamp = m_network.getTime();
     }
+
+	bool joinRoom(Player& _player)
+	{
+		/*std::vector<common::Slot> order
+		{
+			common::Slot::Bottom,
+			common::Slot::Top,
+			common::Slot::Left,
+			common::Slot::Right
+		};
+
+		for (auto slot : order)
+		{
+			if (!m_players.count(slot))
+			{
+				//#TODO: Setup initial position
+				m_players[slot] = _player.getID();
+
+				return true;
+			}
+		}
+
+		return false;*/
+
+		return false;
+	}
+
+	unsigned getLastSimulateTimeStamp() const
+	{
+		return m_lastSimulateTimeStamp;
+	}
+
+	unsigned getLastBroadcastTimeStamp() const
+	{
+		return m_lastBroadcastTimeStamp;
+	}
 
 protected:
     void onPlayerConnected(Player& _player) 
@@ -97,18 +151,18 @@ protected:
     
     void onPacketReceived(Player& _player, ReadStream _stream)
     {
-        /*std::int32_t packetType = static_enum_cast(PacketType::Undefined);
+        /*std::int32_t packetType = static_enum_cast(common::PacketType::Undefined);
         _stream >> packetType;
         
-        switch(static_cast<PacketType>(packetType))
+        switch(static_cast<common::PacketType>(packetType))
         {
-            case PacketType::InitRequest:
+            case common::PacketType::InitRequest:
             {
                 processInit(_stream, _player);
             }
                 break;
                 
-            case PacketType::Frame:
+            case common::PacketType::Frame:
             {
                 processFrame(_stream, _player);
             }
@@ -118,52 +172,134 @@ protected:
                 LOG_WARNING("Receive unknown message type:" + std::to_string(packetType));
                 break;
         }*/
-        
-        //#TODO:
     }
 
     void processInit(ReadStream& _stream, Player& _player)
     {
-        /*WriteStream stream(128);
-        stream << static_enum_cast(PacketType::InitResponse) << _player.getID().value;
-        
-        const auto players = m_network.getAllPlayers();
-        stream << static_cast<std::int32_t>(players.size());
-        
-        for(auto player : players)
-        {
-            const ServerFrame frame = player->getLastProcessedFrame();
-            stream << player->getID().value << frame.id << frame.pos.x << frame.pos.y;
-        }
-        
-        m_network.send(_player, stream);*/
-        
-        //#TODO:
+		/*if (registerPlayer(_player))
+		{
+			constexpr std::int32_t SnapshotIncluded = 1;
+			constexpr std::int32_t SnapshotNotIncluded = 0;
+
+			WriteStream stream(256);
+			stream << _player.getID();
+
+			if (!m_snapshots.empty())
+			{
+				auto it = m_snapshots.begin();
+				std::advance(it, m_snapshots.size() - 1);
+
+				WriteStream snapshot{ serialize(*it) };
+
+				stream << SnapshotIncluded;
+				stream.append(snapshot);
+			}
+			else
+			{
+				stream << SnapshotNotIncluded;
+			}
+
+			m_network.send(_player, stream);
+		}
+		else
+		{
+			//#TODO: Disconnect player, or process somehow else
+		}*/
     }
     
     void processFrame(ReadStream& _stream, Player& _player)
     {
-        /*std::int32_t framesCount = 0;
+		/*std::set<common::ClientFrame> frames;
+
+        std::int32_t framesCount = 0;
         _stream >> framesCount;
-        
-        std::vector<ClientFrame> frames;
-        frames.reserve(framesCount);
         
         for(;framesCount != 0; --framesCount)
         {
-            ClientFrame frame;
-            _stream >> frame.id >> frame.dir.x >> frame.dir.y;
+			common::ID id{ common::InvalidID };
+			_stream >> id;
+
+			common::ClientFrame frame{ id };
+            _stream >> frame.dir.x >> frame.dir.y;
             
-            frames.push_back(frame);
+            frames.insert(frame);
         }
         
-        _player.pushUnprocessedFrames(std::move(frames));*/
-        
-        //#TODO:
+        _player.pushClientFrames(std::move(frames));*/
     }
     
+	void simulatePlayer(Player* _player, float _delta)
+	{
+		/*
+		if(!_player->hasUnprocessedInput())
+        {
+            return;
+        }
+            
+        const PlayerInput input = _player->popPlayerInput();
+            
+        PlayerOutput output{input.id};
+        output.pos = _player->getPosition();
+            
+        if(directionValidForSlot(input.dir, _player->getSlot()))
+        {
+            const Vec2 vec = getVectorFromDirection(input.dir);
+            const Vec2 velocity = vec * m_config.player.moveSpeed * (1.0f / static_cast<float>(_delta));
+            const Vec2 pos = _player->getPosition() + velocity;
+                
+            output.pos = pos;
+        }
+            
+        _player->pushOutput(output);
+		*/
+	}
+
+	WriteStream&& serialize(const common::Snapshot& _snapshot) const
+	{
+		/*WriteStream stream(256);
+		
+		//Serialize frames
+		stream << static_cast<std::int32_t>(_snapshot.frames.size());
+
+		for (const auto& pair : _snapshot.frames)
+		{
+			const common::ID id = pair.first;
+			const auto& frames = pair.second;
+
+			stream << id << static_cast<std::int32_t>(frames.size());
+
+			for (const common::ServerFrame& frame : frames)
+			{
+				stream << frame.id << frame.pos.x << frame.pos.y;
+			}
+		}
+
+		return std::move(stream);*/
+
+		return{0};
+	}
+
+	bool initLevel()
+	{
+		LevelReader reader;
+
+		if(reader.read("#TODO"))
+		{
+			m_level.init(reader.getStaticGeometry());
+			return true;
+		}
+
+		return false;
+	}
+
 private:
-    Network& m_network;
-    GameConfig m_config;
-    std::unique_ptr<simulator::Simulator> m_simulator;
+	unsigned m_lastSimulateTimeStamp{ 0 };
+	unsigned m_lastBroadcastTimeStamp{ 0 };
+
+	Network& m_network;
+    RoomConfig m_config;
+	Level m_level;
+
+	//std::map<common::Slot, common::ID> m_players;
+	//std::set<common::Snapshot> m_snapshots;
 };
